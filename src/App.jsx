@@ -7,15 +7,15 @@ import {
 // ─── Colour tokens ────────────────────────────────────────────────────────────
 const C = {
   blue: "#1A56DB", blueLight: "#E8F0FE", blueMid: "#3B82F6",
-  navy: "#1E3A5F", navyDark: "#0F2237",
+  navy: "var(--navy-bg)", navyDark: "var(--navy-dark-bg)",
   green: "#059669", greenLight: "#D1FAE5",
   amber: "#D97706", amberLight: "#FEF3C7",
   red: "#DC2626", redLight: "#FEE2E2",
   purple: "#7C3AED", purpleLight: "#EDE9FE",
-  gray50: "#F9FAFB", gray100: "#F3F4F6", gray200: "#E5E7EB",
-  gray300: "#D1D5DB", gray400: "#9CA3AF", gray500: "#6B7280",
-  gray700: "#374151", gray800: "#1F2937", gray900: "#111827",
-  white: "#FFFFFF",
+  gray50: "var(--bg-light)", gray100: "var(--bg-mid)", gray200: "var(--border)",
+  gray300: "var(--border-dark)", gray400: "var(--text-muted)", gray500: "var(--text-secondary)",
+  gray700: "var(--text-normal)", gray800: "var(--text-title)", gray900: "var(--text-title)",
+  white: "var(--card-bg)",
 };
 
 // ─── Mock data ────────────────────────────────────────────────────────────────
@@ -477,7 +477,11 @@ useEffect(() => {
   fetch("http://localhost/progress-backend/get_student.php")
     .then((res) => res.json())
     .then((data) => {
-      setS(data);
+      if (data.success) {
+        setS(data.student);
+      } else {
+        console.error(data.message);
+      }
     })
     .catch((err) => console.error(err));
 }, []);
@@ -499,19 +503,19 @@ if (!s) {
                 {s.name.split(" ").map(x=>x[0]).join("")}
               </div>
               <div style={{ fontSize:18, fontWeight:800, color:C.gray900 }}>{s.name}</div>
-              <div style={{ fontSize:13, color:C.gray500, marginTop:4 }}>Roll No: {s.rollNo}</div>
+              <div style={{ fontSize:13, color:C.gray500, marginTop:4 }}>Roll No: {s.roll_No}</div>
               <div style={{ marginTop:10, display:"inline-block", background:C.blueLight,
                 color:C.blue, fontSize:12, fontWeight:600, padding:"4px 14px", borderRadius:99 }}>
-                Class {s.class} – Section {s.section}
+                Class {s.class_name} – Section {s.section}
               </div>
             </div>
             <div style={{ borderTop:`1px solid ${C.gray100}`, paddingTop:14 }}>
               {[
-                { l:"Academic Year", v:s.academicYear },
-                { l:"Date of Birth", v:new Date(s.dob).toLocaleDateString("en-IN") },
-                { l:"Parent Name", v:s.parentName },
-                { l:"Parent Email", v:s.parentEmail },
-              ].map(r => (
+  { l:"Academic Year", v:s.academic_year },
+  { l:"Date of Birth", v:new Date(s.dob).toLocaleDateString("en-IN") },
+  { l:"Parent Name", v:s.parent_name },
+  { l:"Parent Email", v:s.parent_email },
+].map(r => (
                 <div key={r.l} style={{ display:"flex", justifyContent:"space-between", padding:"6px 0",
                   borderBottom:`1px solid ${C.gray50}`, fontSize:13 }}>
                   <span style={{ color:C.gray500 }}>{r.l}</span>
@@ -1040,19 +1044,7 @@ export default function App() {
   const [loggedIn, setLoggedIn] = useState(false);
   const [page, setPage] = useState("dashboard");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [backendMessage, setBackendMessage] = useState("");
 
-  useEffect(() => {
-  fetch("http://localhost/progress-backend/test.php")
-    .then((response) => response.json())
-    .then((data) => {
-      console.log(data);
-      setBackendMessage(data.message);
-    })
-    .catch((error) => {
-      console.error(error);
-    });
-}, []);
 
   if (!loggedIn) return <LoginPage onLogin={()=>setLoggedIn(true)} />;
 
@@ -1076,18 +1068,7 @@ export default function App() {
         <Topbar page={page} onLogout={()=>setLoggedIn(false)} />
         <main style={{ flex:1, padding:"22px 24px", overflowY:"auto" }}>
 
-  <div
-    style={{
-      background: "#d1fae5",
-      color: "green",
-      padding: "10px",
-      marginBottom: "15px",
-      borderRadius: "8px",
-      fontWeight: "bold"
-    }}
-  >
-    {backendMessage}
-  </div>
+
 
   {pageMap[page]}
 
