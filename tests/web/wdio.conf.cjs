@@ -5,6 +5,10 @@ let viteProcess;
 
 exports.config = {
     onPrepare: function (config, capabilities) {
+        const fs = require('fs');
+        if (fs.existsSync('wdio-results.json')) {
+            fs.unlinkSync('wdio-results.json');
+        }
         console.log('🚀 Starting Vite dev server for E2E tests...');
         viteProcess = spawn('npm', ['run', 'dev'], {
             cwd: path.resolve(__dirname, '../..'),
@@ -46,6 +50,23 @@ exports.config = {
     mochaOpts: {
         ui: 'bdd',
         timeout: 60000
+    },
+
+    afterTest: function (test, context, { error, result, duration, passed, retries }) {
+        const fs = require('fs');
+        const logFile = 'wdio-results.json';
+        let results = [];
+        if (fs.existsSync(logFile)) {
+            try {
+                results = JSON.parse(fs.readFileSync(logFile, 'utf8'));
+            } catch(e) {}
+        }
+        results.push({
+            name: test.title,
+            status: passed ? 'PASSED' : 'FAILED',
+            duration: duration ? `${duration} ms` : '<1 ms'
+        });
+        fs.writeFileSync(logFile, JSON.stringify(results, null, 2));
     },
 
     // This hook automatically triggers the MOMENT your tests finish running
@@ -92,14 +113,25 @@ exports.config = {
             // TAB 1: WEB E2E TESTS (WebDriverIO)
             const webSheet = workbook.addWorksheet('Web E2E Tests');
             webSheet.columns = [
-                { header: 'Test Category', key: 'category', width: 25 },
-                { header: 'Execution Status', key: 'status', width: 20 },
-                { header: 'Metrics', key: 'metrics', width: 30 }
+                { header: 'Test Case Name', key: 'name', width: 70 },
+                { header: 'Status', key: 'status', width: 15 },
+                { header: 'Duration', key: 'duration', width: 15 }
             ];
             styleHeader(webSheet);
-            webSheet.addRow(['Selenium Automation', exitCode === 0 ? 'PASSED' : 'FAILED', `Pass Rate: ${results.finished ? ((Math.max(0, results.finished - results.failed) / results.finished) * 100).toFixed(1) : 0}%`]);
-            webSheet.addRow(['Total Suites', results.finished || 0, '']);
-            webSheet.addRow(['Failed Suites', results.failed || 0, '']);
+
+            if (fs.existsSync('wdio-results.json')) {
+                const wdioData = JSON.parse(fs.readFileSync('wdio-results.json', 'utf8'));
+                wdioData.forEach(t => {
+                    const row = webSheet.addRow(t);
+                    if (t.status === 'PASSED') {
+                        row.getCell('status').font = { color: { argb: 'FF008000' }, bold: true };
+                    } else {
+                        row.getCell('status').font = { color: { argb: 'FFFF0000' }, bold: true };
+                    }
+                });
+            } else {
+                webSheet.addRow({name: 'Selenium Automation Suite', status: exitCode === 0 ? 'PASSED' : 'FAILED', duration: '-'});
+            }
 
             // Parse Jest JSON
             let jestTotal = 0;
