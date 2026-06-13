@@ -110,108 +110,102 @@ exports.config = {
                 });
             };
 
-            // TAB 1: WEB E2E TESTS (WebDriverIO)
-            const webSheet = workbook.addWorksheet('Web E2E Tests');
-            webSheet.columns = [
-                { header: 'Test Case Name', key: 'name', width: 70 },
-                { header: 'Status', key: 'status', width: 15 },
-                { header: 'Duration', key: 'duration', width: 15 }
-            ];
-            styleHeader(webSheet);
+            const tabs = {
+                'UI-UX & Unit Tests': [],
+                'Validation Tests': [],
+                'Functional Tests': [],
+                'Deployable Status': []
+            };
 
+            // Map WDIO Tests to tabs
             if (fs.existsSync('wdio-results.json')) {
                 const wdioData = JSON.parse(fs.readFileSync('wdio-results.json', 'utf8'));
-                wdioData.forEach(t => {
-                    const row = webSheet.addRow(t);
-                    if (t.status === 'PASSED') {
-                        row.getCell('status').font = { color: { argb: 'FF008000' }, bold: true };
-                    } else {
-                        row.getCell('status').font = { color: { argb: 'FFFF0000' }, bold: true };
+                wdioData.forEach(test => {
+                    let targetTab = 'Functional Tests'; // Default
+                    const title = test.name || '';
+                    if (title.includes('renders') || title.includes('presence') || title.includes('Verify') || title.includes('Check') || title.includes('App Title')) {
+                        targetTab = 'UI-UX & Unit Tests';
+                        if (title.includes('Verify')) targetTab = 'Validation Tests';
                     }
+                    if (title.includes('Setup') || title.includes('Logout')) targetTab = 'Deployable Status';
+                    
+                    tabs[targetTab].push({
+                        name: `[E2E] ${title}`,
+                        status: test.status.toUpperCase(),
+                        duration: test.duration || '<1 ms'
+                    });
                 });
-            } else {
-                webSheet.addRow({name: 'Selenium Automation Suite', status: exitCode === 0 ? 'PASSED' : 'FAILED', duration: '-'});
             }
 
             // Parse Jest JSON
-            let jestTotal = 0;
-            let jestPassed = 0;
-            let jestFailed = 0;
-
             if (fs.existsSync('jest-results.json')) {
                 const jestData = JSON.parse(fs.readFileSync('jest-results.json', 'utf8'));
-                jestTotal = jestData.numTotalTests || 0;
-                jestPassed = jestData.numPassedTests || 0;
-                jestFailed = jestData.numFailedTests || 0;
-                
-                const tabs = {
-                    'UI-UX & Unit Tests': [],
-                    'Validation Tests': [],
-                    'Functional Tests': [],
-                    'Deployable Status': []
-                };
-
-                // Map Jest tests to tabs
                 jestData.testResults.forEach(suite => {
                     suite.assertionResults.forEach(test => {
                         const ancestor = test.ancestorTitles.join(' ');
                         let targetTab = 'UI-UX & Unit Tests'; // Default
-                        
                         if (ancestor.includes('Validation')) targetTab = 'Validation Tests';
                         else if (ancestor.includes('Sidebar') || ancestor.includes('Functional')) targetTab = 'Functional Tests';
                         else if (ancestor.includes('Deployable Status')) targetTab = 'Deployable Status';
 
                         tabs[targetTab].push({
-                            name: test.title,
+                            name: `[Unit] ${test.title}`,
                             status: test.status.toUpperCase(),
                             duration: test.duration ? `${test.duration} ms` : '<1 ms'
                         });
                     });
                 });
+            }
 
-                // Generate a tab for each category
-                for (const [tabName, tests] of Object.entries(tabs)) {
-                    if (tests.length === 0) continue;
-                    
-                    const sheet = workbook.addWorksheet(tabName);
-                    sheet.columns = [
-                        { header: 'Test Case Name', key: 'name', width: 70 },
-                        { header: 'Status', key: 'status', width: 15 },
-                        { header: 'Duration', key: 'duration', width: 15 }
-                    ];
-                    styleHeader(sheet);
+            // Generate a tab for each category
+            let grandTotal = 0;
+            let grandPassed = 0;
+            let grandFailed = 0;
 
-                    tests.forEach(t => {
-                        const row = sheet.addRow(t);
-                        if (t.status === 'PASSED') {
-                            row.getCell('status').font = { color: { argb: 'FF008000' }, bold: true };
-                        } else {
-                            row.getCell('status').font = { color: { argb: 'FFFF0000' }, bold: true };
-                        }
-                    });
-                }
+            const categorySummary = {};
+
+            for (const [tabName, tests] of Object.entries(tabs)) {
+                if (tests.length === 0) continue;
+                
+                let passed = 0;
+                let failed = 0;
+
+                const sheet = workbook.addWorksheet(tabName);
+                sheet.columns = [
+                    { header: 'Test Case Name', key: 'name', width: 70 },
+                    { header: 'Status', key: 'status', width: 15 },
+                    { header: 'Duration', key: 'duration', width: 15 }
+                ];
+                styleHeader(sheet);
+
+                tests.forEach(t => {
+                    const row = sheet.addRow(t);
+                    if (t.status === 'PASSED') {
+                        passed++;
+                        row.getCell('status').font = { color: { argb: 'FF008000' }, bold: true };
+                    } else {
+                        failed++;
+                        row.getCell('status').font = { color: { argb: 'FFFF0000' }, bold: true };
+                    }
+                });
+
+                categorySummary[tabName] = { passed, failed, total: tests.length };
+                grandTotal += tests.length;
+                grandPassed += passed;
+                grandFailed += failed;
             }
 
             // Saves it directly into your folder
             const outputFilePath = path.join(process.cwd(), 'Automation_Execution_Report.xlsx');
             await workbook.xlsx.writeFile(outputFilePath);
-
             console.log(`✔ Success! Multi-tab Excel report automatically saved to:\n👉 ${outputFilePath}\n`);
 
-            // Calculate E2E WDIO Results
-            const e2eTotal = 102;
-            const e2eFailed = exitCode === 0 ? 0 : 102;
-            const e2ePassed = exitCode === 0 ? 102 : 0;
-
-            const grandTotal = e2eTotal + jestTotal;
-            const grandPassed = e2ePassed + jestPassed;
-            const grandFailed = e2eFailed + jestFailed;
-
             console.log('==================================================');
-            console.log('📊 CONSOLIDATED TEST SUITE SUMMARY');
+            console.log('📊 CATEGORIZED TEST SUITE SUMMARY');
             console.log('==================================================');
-            console.log(`💻 Web E2E Tests (WebDriverIO):  ${e2ePassed}/${e2eTotal} Passed`);
-            console.log(`🧪 Jest Unit & UI/UX Tests:      ${jestPassed}/${jestTotal} Passed`);
+            for (const [tabName, stats] of Object.entries(categorySummary)) {
+                console.log(`🔹 ${tabName.padEnd(25)} : ${stats.passed}/${stats.total} Passed`);
+            }
             console.log('--------------------------------------------------');
             console.log(`🌟 GRAND TOTAL:                  ${grandPassed}/${grandTotal} TEST CASES PASSED`);
             if (grandFailed > 0) {
@@ -222,17 +216,21 @@ exports.config = {
             console.log('==================================================\n');
 
             if (process.env.GITHUB_STEP_SUMMARY) {
+                let summaryRows = '';
+                for (const [tabName, stats] of Object.entries(categorySummary)) {
+                    summaryRows += `| **${tabName}** | ${stats.passed} | ${stats.failed} | ${stats.total} |\n`;
+                }
+
                 const summaryMd = `
-### 📊 Consolidated Test Suite Summary
-| Test Suite Type | Passed | Failed | Total Cases |
-|-----------------|--------|--------|-------------|
-| **💻 Web E2E (WebdriverIO)** | ${e2ePassed} | ${e2eFailed} | ${e2eTotal} |
-| **🧪 Unit & UI/UX (Jest)** | ${jestPassed} | ${jestFailed} | ${jestTotal} |
+### 📊 Categorized Test Suite Summary
+| Test Category | Passed | Failed | Total Cases |
+|---------------|--------|--------|-------------|
+${summaryRows}
 | **🌟 GRAND TOTAL** | **${grandPassed}** | **${grandFailed}** | **${grandTotal}** |
 
 ${grandFailed > 0 ? '❌ **STATUS: FAILED**' : '✅ **STATUS: ALL TESTS PASSED SUCCESSFULLY!**'}
 
-> **Note**: You can download the complete multi-tab \`Automation_Execution_Report.xlsx\` from the Artifacts section at the bottom of this page.
+> **Note**: You can download the categorized \`Automation_Execution_Report.xlsx\` containing all ${grandTotal} individual test cases from the Artifacts section at the bottom of this page.
 `;
                 fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summaryMd);
             }
