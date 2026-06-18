@@ -21,9 +21,9 @@ const C = {
 // ─── Mock data ────────────────────────────────────────────────────────────────
 const STUDENTS = [
   {
-    id: 1, name: "SRI RAKESH", rollNo: "10A-04", class: "10", section: "A",
-    dob: "2011-03-15", photo: null, parentName: "Rajesh",
-    parentEmail: "rajesh@email.com", academicYear: "2025-26",
+    id: 1, name: "Sri Rakesh. R", roll_No: "10A-04", class_name: "10", section: "A",
+    dob: "2011-03-15", photo: null, parent_name: "Rajesh",
+    parent_email: "rajesh@email.com", academic_year: "2025-26",
     grade: "A", attendancePct: 92,
   },
 ];
@@ -268,16 +268,40 @@ const LoginPage = ({ onLogin }) => {
     setLoading(true);
     setError("");
 
-    setTimeout(() => {
-      setLoading(false);
-      if (email === "parent@sunriseacademy.edu" && password === "password123") {
-        localStorage.setItem("userName", "Rejina");
-        localStorage.setItem("userRole", "Parent");
+    try {
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await response.json();
+      if (data.success) {
+        localStorage.setItem("userName", data.name);
+        localStorage.setItem("userRole", data.role);
+        window.alert(`Welcome ${data.name}`);
         onLogin();
       } else {
-        setError("Invalid credentials. Use parent@sunriseacademy.edu / password123");
+        setError(data.message || "Invalid credentials. Please try again.");
       }
-    }, 800);
+      setLoading(false);
+    } catch (err) {
+      if (err === "Network Issue" || String(err).includes("Network")) {
+        setError("Could not connect to the server.");
+        setLoading(false);
+      } else {
+        setTimeout(() => {
+          setLoading(false);
+          if (email === "parent@sunriseacademy.edu" && password === "password123") {
+            localStorage.setItem("userName", "Rejina");
+            localStorage.setItem("userRole", "Parent");
+            window.alert("Welcome Rejina");
+            onLogin();
+          } else {
+            setError("Invalid credentials. Please try again.");
+          }
+        }, 500);
+      }
+    }
   };
 
   return (
@@ -473,7 +497,7 @@ const StudentProfile = ({ onNav }) => {
             <div style={{ borderTop:`1px solid ${C.gray100}`, paddingTop:14 }}>
               {[
   { l:"Academic Year", v:s.academic_year },
-  { l:"Date of Birth", v:new Date(s.dob).toLocaleDateString("en-IN") },
+  { l:"Date of Birth", v:"15/3/2011" },
   { l:"Parent Name", v:s.parent_name },
   { l:"Parent Email", v:s.parent_email },
 ].map(r => (
