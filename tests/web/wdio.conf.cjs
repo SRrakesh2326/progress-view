@@ -15,7 +15,7 @@ exports.config = {
             shell: true,
             stdio: 'ignore'
         });
-        return new Promise((resolve) => setTimeout(resolve, 3000));
+        return new Promise((resolve) => setTimeout(resolve, 10000));
     },
     runner: 'local',
 

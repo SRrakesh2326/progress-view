@@ -7,7 +7,7 @@ describe('ProgressView Comprehensive E2E Auto-Checker', () => {
         await browser.url('http://localhost:5175');
         await browser.maximizeWindow();
         // Give Vite a split second to initial load, but minimize wait time
-        await browser.pause(500); 
+        await browser.pause(2000); 
     });
 
     afterEach(function () {
@@ -40,6 +40,7 @@ describe('ProgressView Comprehensive E2E Auto-Checker', () => {
             };
         });
         const title = await $('h2=Sign in to your account');
+        await title.waitForDisplayed({ timeout: 5000 });
         await expect(title).toBeDisplayed();
     });
 
@@ -462,6 +463,7 @@ describe('ProgressView Comprehensive E2E Auto-Checker', () => {
 
     it('TC076 [Subject Performance]: Click Computer Science filter', async () => {
         const btn = await $('button=Computer Science');
+        await btn.waitForDisplayed({ timeout: 5000 });
         await btn.click();
     });
 
@@ -472,6 +474,7 @@ describe('ProgressView Comprehensive E2E Auto-Checker', () => {
 
     it('TC078 [Subject Performance]: Click Tamil filter', async () => {
         const btn = await $('button=Tamil');
+        await btn.waitForDisplayed({ timeout: 5000 });
         await btn.click();
     });
 
@@ -482,6 +485,7 @@ describe('ProgressView Comprehensive E2E Auto-Checker', () => {
 
     it('TC080 [Subject Performance]: Click Mathematics filter', async () => {
         const btn = await $('button=Mathematics');
+        await btn.waitForDisplayed({ timeout: 5000 });
         await btn.click();
     });
 
@@ -493,7 +497,9 @@ describe('ProgressView Comprehensive E2E Auto-Checker', () => {
     // --- Edge Cases / Negative Tests / Error Handling ---
     it('TC082 [Yearly Progress]: Open tab', async () => {
         const navLink = await $('span=Yearly Progress');
+        await navLink.waitForDisplayed({ timeout: 5000 });
         await navLink.click();
+        await browser.pause(500);
     });
 
     it('TC083 [Yearly Progress]: Verify overall GPA', async () => {
@@ -523,7 +529,9 @@ describe('ProgressView Comprehensive E2E Auto-Checker', () => {
 
     it('TC088 [Teacher Remarks]: Open tab', async () => {
         const navLink = await $('span=Teacher Remarks');
+        await navLink.waitForDisplayed({ timeout: 5000 });
         await navLink.click();
+        await browser.pause(500);
     });
 
     it('TC089 [Teacher Remarks]: Verify grid renders', async () => {
@@ -568,7 +576,9 @@ describe('ProgressView Comprehensive E2E Auto-Checker', () => {
 
     it('TC097 [Dashboard]: Switch back to Dashboard', async () => {
         const navLink = await $('span=Dashboard');
+        await navLink.waitForDisplayed({ timeout: 5000 });
         await navLink.click();
+        await browser.pause(500);
     });
 
     it('TC098 [Dashboard]: Verify Quick Stats Attendance', async () => {
@@ -588,7 +598,9 @@ describe('ProgressView Comprehensive E2E Auto-Checker', () => {
 
     it('TC101 [Logout]: Click Sign Out', async () => {
         const logoutBtn = await $('button=Sign Out');
+        await logoutBtn.waitForDisplayed({ timeout: 5000 });
         await logoutBtn.click();
+        await browser.pause(500);
     });
 
     it('TC102 [Logout]: Verify returned to Login', async () => {

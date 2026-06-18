@@ -30,6 +30,18 @@ jobs:
     - name: Run Jest Unit Tests
       run: npm run test:unit
 
+    - name: Wait for Vite dev server
+      run: |
+        npm run dev &
+        for i in {1..30}; do
+          if curl -f http://localhost:5175 > /dev/null 2>&1; then
+            echo "Dev server is ready"
+            break
+          fi
+          echo "Waiting for dev server... ($i/30)"
+          sleep 1
+        done
+
     - name: Run WebdriverIO E2E Tests
       run: npm run test:web
       env:
